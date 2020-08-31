@@ -1,12 +1,15 @@
 package com.netflix.spinnaker.fiat.config;
 
 import com.jakewharton.retrofit.Ok3Client;
-import com.netflix.spinnaker.config.DefaultServiceEndpoint;
 import com.netflix.spinnaker.config.okhttp3.OkHttpClientProvider;
 import com.netflix.spinnaker.fiat.roles.github.GitHubProperties;
 import com.netflix.spinnaker.fiat.roles.github.client.GitHubClient;
+import java.nio.file.Paths;
+import java.util.UUID;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.Cache;
+import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,13 +39,16 @@ public class GitHubConfig {
     BasicAuthRequestInterceptor interceptor =
         new BasicAuthRequestInterceptor().setAccessToken(gitHubProperties.getAccessToken());
 
+    Cache cache =
+        new Cache(
+            Paths.get(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString()).toFile(),
+            gitHubProperties.getHttpResponseCacheMaxBytes());
+    OkHttpClient okHttpClient = new OkHttpClient.Builder().cache(cache).build();
+
     return new RestAdapter.Builder()
         .setEndpoint(Endpoints.newFixedEndpoint(gitHubProperties.getBaseUrl()))
         .setRequestInterceptor(interceptor)
-        .setClient(
-            new Ok3Client(
-                clientProvider.getClient(
-                    new DefaultServiceEndpoint("github", gitHubProperties.getBaseUrl()))))
+        .setClient(new Ok3Client(okHttpClient))
         .setConverter(new JacksonConverter())
         .setLogLevel(retrofitLogLevel)
         .setLog(new Slf4jRetrofitLogger(GitHubClient.class))

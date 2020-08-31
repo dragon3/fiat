@@ -26,4 +26,6 @@ public class GitHubProperties {
 
   @NotNull Integer membershipCacheTTLSeconds = 60 * 10; // 10 min time to refresh
   @NotNull Integer membershipCacheTeamsSize = 1000; // 1000 github teams
+
+  @NotNull Integer httpResponseCacheMaxBytes = 10 * 1024 * 1024; // 10 MB
 }
